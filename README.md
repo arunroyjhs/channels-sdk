@@ -144,6 +144,54 @@ bun test           # 83 tests, ~700ms
 bun test --watch   # watch mode
 ```
 
+## Windows Setup Notes
+
+On Windows, the plugin install may fail to auto-detect `bun`. Fix with these steps:
+
+### 1. Install bun and add to PATH
+
+```powershell
+# Install bun (if not already)
+powershell -c "irm bun.sh/install.ps1 | iex"
+
+# Add to PATH permanently (adjust path if different)
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";C:\Users\$env:USERNAME\.bun\bin", "User")
+```
+
+Restart your terminal after adding to PATH.
+
+### 2. Create `.mcp.json` in plugin cache
+
+Claude Code reads the `.mcp.json` from the plugin cache directory. If the plugin installed but tools don't appear:
+
+```bash
+# Find the plugin cache directory
+ls ~/.claude/plugins/cache/channels-sdk/channels-telegram/
+
+# Create .mcp.json with absolute path to bun
+cat > ~/.claude/plugins/cache/channels-sdk/channels-telegram/<hash>/.mcp.json << 'EOF'
+{
+  "mcpServers": {
+    "channels-telegram": {
+      "command": "C:\\Users\\YOUR_USERNAME\\.bun\\bin\\bun.exe",
+      "args": ["run", "--cwd", "${CLAUDE_PLUGIN_ROOT}", "--shell=bun", "--silent", "start"]
+    }
+  }
+}
+EOF
+```
+
+Replace `YOUR_USERNAME` and `<hash>` with your actual values.
+
+### 3. Common gotchas
+
+| Issue | Fix |
+|-------|-----|
+| Tools don't appear after install | Create `.mcp.json` in plugin cache (step 2 above), restart Claude Code |
+| `.env` file not reading token | Ensure file is UTF-8, not UTF-16LE. Re-save with: `iconv -f utf-16le -t utf-8 .env > .env.tmp && mv .env.tmp .env` |
+| `bun: command not found` | Add bun to system PATH (step 1 above), restart terminal |
+| Bot not responding to /start | Check `TELEGRAM_BOT_TOKEN` in `~/.claude/channels/telegram/.env` — no quotes around value |
+
 ## Uninstall
 
 ```bash

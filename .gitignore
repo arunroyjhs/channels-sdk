@@ -1,1 +1,5 @@
 node_modules/
+.mcp.json
+.env
+devices.json
+context/
