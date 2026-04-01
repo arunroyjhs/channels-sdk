@@ -6,7 +6,7 @@ Universal messaging layer for Claude Code. Connect your AI agent to Telegram, Di
 
 ```bash
 # 1. Add the marketplace
-claude plugins marketplace add github:arunroyjhs/channels-sdk
+claude plugins marketplace add arunroyjhs/channels-sdk
 
 # 2. Install the plugin
 claude plugins install channels-telegram
