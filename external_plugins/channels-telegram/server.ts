@@ -247,15 +247,37 @@ telegram.onMessage(async (msg) => {
     }
   }
 
-  // Authorized message — write to inbox for Claude Code to pick up
+  // Authorized message — notify Claude Code via channel push
   // Include recent context so the agent has conversation history
   const recentContext = context.getContext(msg.chatId, 10);
   const enrichedMsg = { ...msg, context: recentContext };
+
+  // Write to inbox as backup / for tools that read files
   const inboxFile = join(INBOX_DIR, `${Date.now()}-${msg.messageId}.json`);
   try {
     writeFileSync(inboxFile, JSON.stringify(enrichedMsg, null, 2));
   } catch (err) {
     process.stderr.write(`channels-sdk: failed to write inbox: ${err}\n`);
+  }
+
+  // Push to Claude Code conversation via MCP channel notification
+  try {
+    const content = msg.voice
+      ? `[Voice message from @${msg.username}] Audio file: ${msg.voice}`
+      : msg.text || '[non-text message]';
+    await server.notification({
+      method: 'notifications/claude/channel',
+      params: {
+        content,
+        meta: {
+          chat_id: msg.chatId,
+          username: msg.username || '',
+          message_id: String(msg.messageId),
+        },
+      },
+    });
+  } catch (err) {
+    process.stderr.write(`channels-sdk: failed to push channel notification: ${err}\n`);
   }
 });
 
@@ -300,13 +322,37 @@ telegram.onCallback(async (chatId, messageId, data) => {
   } catch (err) {
     process.stderr.write(`channels-sdk: failed to write callback inbox: ${err}\n`);
   }
+
+  // Push callback to Claude Code
+  try {
+    await server.notification({
+      method: 'notifications/claude/channel',
+      params: {
+        content: `[Button pressed: ${data}]`,
+        meta: { chat_id: chatId, message_id: String(messageId), callback_data: data },
+      },
+    });
+  } catch (err) {
+    process.stderr.write(`channels-sdk: failed to push callback notification: ${err}\n`);
+  }
 });
 
 // ── MCP Server ──────────────────────────────────────────────────────
 
 const server = new Server(
   { name: 'channels-sdk-telegram', version: '0.1.0' },
-  { capabilities: { tools: {} } },
+  {
+    capabilities: {
+      tools: {},
+      experimental: {
+        'claude/channel': {},
+      },
+    },
+    instructions:
+      'You are connected to Telegram via Channels SDK. When a message arrives, ' +
+      'react with ⚡ first, then respond using the reply tool with the same chat_id. ' +
+      'Use get_context for conversation history.',
+  },
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
