@@ -13,6 +13,24 @@ import type { ChannelAdapter, OutboundMessage, InboundMessage, KeyboardRow } fro
 
 const MAX_MESSAGE_LENGTH = 4096;
 
+/** Convert simple Markdown to Telegram HTML: *bold*, _italic_, `code`, ```pre``` */
+function mdToHtml(text: string): string {
+  // Escape HTML entities first
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  // Code blocks (```...```) → <pre>
+  html = html.replace(/```([\s\S]*?)```/g, '<pre>$1</pre>');
+  // Inline code (`...`) → <code>
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Bold (*...*) → <b> — but not inside code/pre tags
+  html = html.replace(/\*([^*]+)\*/g, '<b>$1</b>');
+  // Italic (_..._) → <i>
+  html = html.replace(/\b_([^_]+)_\b/g, '<i>$1</i>');
+  return html;
+}
+
 export class TelegramAdapter implements ChannelAdapter {
   readonly platform = 'telegram';
   private bot: Bot;
@@ -59,7 +77,9 @@ export class TelegramAdapter implements ChannelAdapter {
   // ── Send ──────────────────────────────────────────────────────────
 
   async send(msg: OutboundMessage): Promise<string> {
-    const parseMode = msg.format === 'markdown' ? 'MarkdownV2'
+    // Use HTML instead of MarkdownV2 — MarkdownV2 requires escaping 18+ special chars
+    // which causes silent failures. HTML only needs <, >, & escaped.
+    const parseMode = msg.format === 'markdown' ? 'HTML'
       : msg.format === 'html' ? 'HTML'
       : undefined;
 
@@ -99,8 +119,11 @@ export class TelegramAdapter implements ChannelAdapter {
       }
     }
 
+    // Convert Markdown bold/italic/code to HTML when format is 'markdown'
+    const text = msg.format === 'markdown' ? mdToHtml(msg.text) : msg.text;
+
     // Split long messages
-    const chunks = this.splitMessage(msg.text);
+    const chunks = this.splitMessage(text);
     let lastMessageId = '';
 
     for (let i = 0; i < chunks.length; i++) {
@@ -118,11 +141,10 @@ export class TelegramAdapter implements ChannelAdapter {
   }
 
   async edit(chatId: string, messageId: string, text: string, format?: string): Promise<void> {
-    const parseMode = format === 'markdown' ? 'MarkdownV2'
-      : format === 'html' ? 'HTML'
-      : undefined;
+    const parseMode = (format === 'markdown' || format === 'html') ? 'HTML' : undefined;
+    const finalText = format === 'markdown' ? mdToHtml(text) : text;
 
-    await this.bot.api.editMessageText(chatId, Number(messageId), text, {
+    await this.bot.api.editMessageText(chatId, Number(messageId), finalText, {
       parse_mode: parseMode,
     });
   }
