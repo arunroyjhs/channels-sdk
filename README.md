@@ -2,39 +2,21 @@
 
 Universal messaging layer for Claude Code. Connect your AI agent to Telegram, Discord, Slack, WhatsApp — same interface, different transport.
 
-## Install
-
-### Option 1: Claude Code Plugin (recommended)
+## Install (one command)
 
 ```bash
-# Add to your Claude Code settings.json:
-claude mcp add channels-sdk -s user -- bun run /path/to/channels-sdk/src/adapters/telegram/server.ts
+# 1. Add the marketplace
+claude plugins marketplace add github:arunroyjhs/channels-sdk
+
+# 2. Install the plugin
+claude plugins install channels-telegram
+
+# 3. Restart Claude Code
 ```
 
-Or manually add to `~/.claude/settings.json`:
-```json
-{
-  "mcpServers": {
-    "channels-sdk": {
-      "command": "bun",
-      "args": ["run", "/path/to/channels-sdk/src/adapters/telegram/server.ts"],
-      "env": {
-        "TELEGRAM_BOT_TOKEN": "your-bot-token-here"
-      }
-    }
-  }
-}
-```
+That's it. The plugin auto-starts on every Claude Code session.
 
-### Option 2: Clone and Run
-
-```bash
-git clone git@github.com:arunroyjhs/channels-sdk.git
-cd channels-sdk
-bun install
-```
-
-## Setup (3 steps, 2 minutes)
+## Setup (2 minutes)
 
 ### Step 1: Create a Telegram Bot
 1. Open Telegram, search for **@BotFather**
@@ -42,25 +24,13 @@ bun install
 3. Copy the bot token (looks like `123456789:AAHdqTc...`)
 
 ### Step 2: Save the Token
-
-**Option A** — Environment variable in settings.json (see Install above)
-
-**Option B** — Env file:
 ```bash
 mkdir -p ~/.claude/channels/telegram
 echo "TELEGRAM_BOT_TOKEN=123456789:AAHdqTc..." > ~/.claude/channels/telegram/.env
 ```
 
-### Step 3: Start
-```bash
-# If using Option 2 (clone):
-bun start
-
-# If using Option 1 (settings.json):
-# Restart Claude Code — plugin starts automatically
-```
-
-That's it. Send `/start` to your bot on Telegram to pair.
+### Step 3: Pair
+Send `/start` to your bot on Telegram. Done.
 
 ## Pairing Your Phone
 
