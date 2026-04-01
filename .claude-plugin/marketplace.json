@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "channels-sdk",
+  "description": "Universal messaging layer for Claude Code — Telegram, Discord, Slack, WhatsApp",
+  "owner": {
+    "name": "Arunoday Ray",
+    "email": "arunroyjhs@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "channels-telegram",
+      "description": "Telegram channel for Claude Code — 16 tools, seamless pairing, voice transcription, scheduled messages, proactive alerts",
+      "category": "productivity",
+      "source": "./external_plugins/channels-telegram",
+      "homepage": "https://github.com/arunroyjhs/channels-sdk"
+    }
+  ]
+}
