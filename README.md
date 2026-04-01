@@ -2,128 +2,148 @@
 
 Universal messaging layer for Claude Code. Connect your AI agent to Telegram, Discord, Slack, WhatsApp — same interface, different transport.
 
-## Quick Start (Telegram)
+## Install
+
+### Option 1: Claude Code Plugin (recommended)
 
 ```bash
-# 1. Create a bot via @BotFather on Telegram
-# 2. Save the token
-echo "TELEGRAM_BOT_TOKEN=123456789:AAH..." > ~/.claude/channels/telegram/.env
-
-# 3. Install & run
-cd plugins/channels-sdk
-bun install
-bun start
+# Add to your Claude Code settings.json:
+claude mcp add channels-sdk -s user -- bun run /path/to/channels-sdk/src/adapters/telegram/server.ts
 ```
 
-## Pairing
-
-### Deep Link (recommended)
-Your agent generates a one-time link:
-```
-> create_deep_link tool → https://t.me/YourBot?start=pair_abc123
-```
-Open on your phone → instant pairing. Link expires in 10 minutes.
-
-### Code Pairing
-1. Send `/start` to the bot on Telegram
-2. Bot replies with a 6-character code (e.g., `XHWN4K`)
-3. Agent verifies it via `verify_pair_code` tool
-4. Done — bot confirms pairing
-
-### Commands
-- `/start` — Begin pairing
-- `/pair` — Get a new pairing code
-- `/devices` — List paired devices
-- `/lock` — Emergency: revoke all devices
-- `/help` — Show all commands
-- `/status` — Agent status
-- `/tasks` — Task list
-- `/clear` — Clear conversation context
-
-## MCP Tools (16 total)
-
-### Layer 1 — Communication
-| Tool | Description |
-|------|-------------|
-| `reply` | Send a message (markdown, HTML, files, inline keyboard) |
-| `react` | Add emoji reaction |
-| `edit_message` | Edit a sent message |
-| `send_keyboard` | Send inline keyboard buttons |
-| `download_attachment` | Download file by Telegram file_id |
-| `get_devices` | List paired devices |
-| `verify_pair_code` | Verify a 6-char pairing code |
-| `create_deep_link` | Generate one-time pairing URL |
-
-### Layer 2 — Interaction
-| Tool | Description |
-|------|-------------|
-| `send_poll` | Native Telegram poll (2-10 options) |
-| `get_context` | Get recent conversation history |
-| `track_response` | Log assistant message to context |
-
-### Layer 3 — Intelligence
-| Tool | Description |
-|------|-------------|
-| `transcribe_voice` | Transcribe audio file (Deepgram/OpenAI) |
-| `schedule_message` | Schedule recurring or one-time messages |
-| `list_schedules` | List active schedules |
-| `remove_schedule` | Remove a schedule by ID |
-| `send_alert` | Proactive alert with severity level |
-
-## Voice Transcription
-
-Automatically transcribes Telegram voice messages and replies with text.
-
-Voice messages are downloaded and passed to Claude Code, which reads and transcribes them natively using your existing Claude plan. **No API keys needed for voice transcription.**
-
-How it works:
-1. User sends voice message on Telegram
-2. Plugin downloads the audio file, reacts with 🎙
-3. File path is included in the inbox message
-4. Claude Code reads the audio file and transcribes it
-
-Zero config. Zero cost. Uses your Claude subscription.
-
-## Scheduled Messages
-
-```
-# Daily digest at 6pm
-schedule_message: { chat_id, text: "Daily summary...", schedule: "daily:18:00" }
-
-# Every 30 minutes
-schedule_message: { chat_id, text: "Status check", schedule: "interval:30" }
-
-# One-time reminder
-schedule_message: { chat_id, text: "Meeting in 5min", schedule: "once:2026-04-02T10:00:00Z" }
-
-# Hourly
-schedule_message: { chat_id, text: "Heartbeat", schedule: "hourly" }
-```
-
-## Proactive Alerts
-
-```
-send_alert: {
-  chat_id: "123",
-  title: "Build Failed",
-  body: "CI pipeline failed on commit abc123",
-  level: "error",        // info | warning | error
-  keyboard: [[{ text: "View Logs", callback_data: "logs" }]]
+Or manually add to `~/.claude/settings.json`:
+```json
+{
+  "mcpServers": {
+    "channels-sdk": {
+      "command": "bun",
+      "args": ["run", "/path/to/channels-sdk/src/adapters/telegram/server.ts"],
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your-bot-token-here"
+      }
+    }
+  }
 }
 ```
 
-Severity indicators: info = ℹ️, warning = ⚠️, error = 🚨
+### Option 2: Clone and Run
 
-## Conversation Context
+```bash
+git clone git@github.com:arunroyjhs/channels-sdk.git
+cd channels-sdk
+bun install
+```
 
-The SDK maintains a rolling 50-message window per chat, persisted to disk.
+## Setup (3 steps, 2 minutes)
 
-- Auto-tracks all user messages and command responses
-- `get_context` tool retrieves recent history
-- `track_response` logs agent replies
-- `/clear` command resets context
-- 24-hour TTL with auto-prune
-- Debounced disk writes (3-second batch)
+### Step 1: Create a Telegram Bot
+1. Open Telegram, search for **@BotFather**
+2. Send `/newbot`, follow prompts, pick a name
+3. Copy the bot token (looks like `123456789:AAHdqTc...`)
+
+### Step 2: Save the Token
+
+**Option A** — Environment variable in settings.json (see Install above)
+
+**Option B** — Env file:
+```bash
+mkdir -p ~/.claude/channels/telegram
+echo "TELEGRAM_BOT_TOKEN=123456789:AAHdqTc..." > ~/.claude/channels/telegram/.env
+```
+
+### Step 3: Start
+```bash
+# If using Option 2 (clone):
+bun start
+
+# If using Option 1 (settings.json):
+# Restart Claude Code — plugin starts automatically
+```
+
+That's it. Send `/start` to your bot on Telegram to pair.
+
+## Pairing Your Phone
+
+### Deep Link (fastest)
+Your Claude Code agent generates a one-time link:
+```
+create_deep_link tool → https://t.me/YourBot?start=pair_abc123
+```
+Tap on phone → instant pairing. Link expires in 10 minutes.
+
+### Code Pairing
+1. Send `/start` to the bot on Telegram
+2. Bot shows a 6-character code (e.g., `XHWN4K`)
+3. Claude Code verifies it via `verify_pair_code` tool
+4. Bot confirms: "Paired!"
+
+### Telegram Commands
+| Command | What it does |
+|---------|-------------|
+| `/start` | Begin pairing |
+| `/pair` | Get a new pairing code |
+| `/devices` | List paired devices |
+| `/lock` | Emergency: revoke all devices |
+| `/help` | Show all commands |
+| `/status` | Agent status |
+| `/tasks` | Task list |
+| `/clear` | Clear conversation context |
+
+## Features
+
+### 16 MCP Tools
+
+**Layer 1 — Communication**
+| Tool | Description |
+|------|-------------|
+| `reply` | Send message (markdown, HTML, files, inline keyboard) |
+| `react` | Emoji reaction |
+| `edit_message` | Edit a sent message |
+| `send_keyboard` | Inline keyboard buttons |
+| `download_attachment` | Download file by Telegram file_id |
+| `get_devices` | List paired devices |
+| `verify_pair_code` | Verify pairing code |
+| `create_deep_link` | Generate one-time pairing URL |
+
+**Layer 2 — Interaction**
+| Tool | Description |
+|------|-------------|
+| `send_poll` | Native Telegram poll (2-10 options) |
+| `get_context` | Recent conversation history |
+| `track_response` | Log assistant message to context |
+
+**Layer 3 — Intelligence**
+| Tool | Description |
+|------|-------------|
+| `transcribe_voice` | Voice file path for Claude to read |
+| `schedule_message` | Schedule recurring/one-time messages |
+| `list_schedules` | List active schedules |
+| `remove_schedule` | Remove a schedule |
+| `send_alert` | Proactive alert with severity |
+
+### Voice Messages
+Voice messages are handled by Claude Code natively — no API keys needed.
+
+1. User sends voice message on Telegram
+2. Plugin downloads audio, reacts with 🎙
+3. File path passed to Claude Code
+4. Claude reads and transcribes using your existing plan
+
+Zero config. Zero cost.
+
+### Scheduled Messages
+```
+"daily:18:00"              → every day at 6pm
+"hourly"                   → top of each hour
+"interval:30"              → every 30 minutes
+"once:2026-04-02T10:00:00Z" → one-time
+```
+
+### Proactive Alerts
+Severity levels: ℹ️ info, ⚠️ warning, 🚨 error. Optional action buttons.
+
+### Conversation Context
+Rolling 50-message window per chat. Persisted to disk. 24-hour TTL. Auto-prune. Debounced writes.
 
 ## Architecture
 
@@ -137,7 +157,7 @@ The SDK maintains a rolling 50-message window per chat, persisted to disk.
 │  ├── CommandRegistry (extensible /commands)       │
 │  ├── ContextManager (conversation history)        │
 │  ├── Scheduler (recurring/one-time messages)      │
-│  └── Voice (STT: Deepgram, OpenAI)               │
+│  └── Voice (Claude Code native transcription)     │
 ├─────────────────────────────────────────────────┤
 │  Channel Adapters                                │
 │  ├── TelegramAdapter (grammY) ← implemented      │
@@ -146,8 +166,6 @@ The SDK maintains a rolling 50-message window per chat, persisted to disk.
 │  └── WhatsAppAdapter          ← planned           │
 └─────────────────────────────────────────────────┘
 ```
-
-All core modules are channel-agnostic. Adding a new platform means implementing the `ChannelAdapter` interface (send, edit, react, keyboard, download, onMessage, onCallback).
 
 ## Environment Variables
 
@@ -159,17 +177,9 @@ All core modules are channel-agnostic. Adding a new platform means implementing 
 ## Testing
 
 ```bash
-bun test           # 82 tests, ~700ms
+bun test           # 83 tests, ~700ms
 bun test --watch   # watch mode
 ```
-
-Test coverage:
-- Pairing: 26 tests (codes, auth, multi-device, persistence)
-- Messages: 12 tests (splitting, types)
-- Commands: 9 tests (registry, execution, help)
-- Context: 12 tests (add, retrieve, persist, prune)
-- Scheduler: 14 tests (add, remove, delay, persist, execution)
-- Voice: 9 tests (config, validation, providers)
 
 ## License
 
