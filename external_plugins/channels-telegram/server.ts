@@ -43,10 +43,18 @@ const INBOX_DIR = join(STATE_DIR, 'inbox');
 mkdirSync(STATE_DIR, { recursive: true });
 mkdirSync(INBOX_DIR, { recursive: true });
 
-// Load .env
+// Load .env (handle UTF-16LE files from Windows tools)
 try {
   chmodSync(ENV_FILE, 0o600);
-  for (const line of readFileSync(ENV_FILE, 'utf8').split('\n')) {
+  let raw = readFileSync(ENV_FILE);
+  // Detect UTF-16LE: null bytes after ASCII chars (e.g., "T\0E\0")
+  if (raw.length >= 2 && raw[1] === 0 && raw[0] !== 0) {
+    raw = Buffer.from(raw.toString('utf16le'));
+  }
+  // Strip BOM if present
+  let text = raw.toString('utf8');
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  for (const line of text.split(/\r?\n/)) {
     const m = line.match(/^(\w+)=(.*)$/);
     if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2];
   }
