@@ -144,6 +144,13 @@ bun test           # 83 tests, ~700ms
 bun test --watch   # watch mode
 ```
 
+## Uninstall
+
+```bash
+claude plugins uninstall channels-telegram
+claude plugins marketplace remove channels-sdk
+```
+
 ## License
 
 MIT
